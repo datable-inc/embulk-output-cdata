@@ -1,6 +1,6 @@
 # CData output plugin for Embulk
 
-TODO: Write short description here and build.gradle file.
+Support to CData JDBC Driver bulk upsert or update statements.
 
 ## Overview
 
