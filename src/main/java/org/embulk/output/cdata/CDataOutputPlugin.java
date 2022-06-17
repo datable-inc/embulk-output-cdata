@@ -13,6 +13,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
 public class CDataOutputPlugin
   implements OutputPlugin {
@@ -26,6 +27,9 @@ public class CDataOutputPlugin
 
     @Config("url")
     String getUrl();
+
+    @Config("mode")
+    String getMode();
 
     @Config("table")
     String getTable();
@@ -74,7 +78,11 @@ public class CDataOutputPlugin
     PluginTask task = taskSource.loadTask(PluginTask.class);
 
     PageReader reader = new PageReader(schema);
-    return new CDataPageOutput(reader, conn, task);
+    if (Objects.equals(task.getMode(), "insert_direct")) {
+      return new CDataPageOutputForUpsert(reader, conn, task);
+    } else {
+      return new CDataPageOutputForUpdate(reader, conn, task);
+    }
   }
 
   private void addDriverJarToClasspath(String glob) {
