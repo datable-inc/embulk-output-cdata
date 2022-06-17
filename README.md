@@ -1,4 +1,4 @@
-# Cdata output plugin for Embulk
+# CData output plugin for Embulk
 
 TODO: Write short description here and build.gradle file.
 
@@ -11,17 +11,22 @@ TODO: Write short description here and build.gradle file.
 
 ## Configuration
 
-- **option1**: description (integer, required)
-- **option2**: description (string, default: `"myvalue"`)
-- **option3**: description (string, default: `null`)
+- **driver_path**: description (string, required)
+- **url**: description (string, `"jdbc:..."`)
+- **mode**: description (string, `"insert_direct" | "update"`)
+- **table**: description (string, required)
+- **external_id_column**: description (string, required)
 
 ## Example
 
 ```yaml
 out:
   type: cdata
-  option1: example1
-  option2: example2
+  driver_path: lib/awesome.jar
+  url: jdbc:...
+  mode: merge_direct
+  table: TableName
+  external_id_column: ExternalIdColumn
 ```
 
 
