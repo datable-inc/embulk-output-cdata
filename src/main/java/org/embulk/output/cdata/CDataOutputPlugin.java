@@ -1,5 +1,8 @@
 package org.embulk.output.cdata;
 
+import org.embulk.config.*;
+import org.embulk.spi.*;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -11,107 +14,101 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.embulk.config.*;
-import org.embulk.spi.*;
-
 public class CDataOutputPlugin
-        implements OutputPlugin
-{
+  implements OutputPlugin {
 
-    private static Connection conn;
-    public interface PluginTask
-            extends Task
-    {
-        @Config("driver_path")
-        public String getDriverPath();
+  private static Connection conn;
 
-        @Config("url")
-        public String getUrl();
+  public interface PluginTask
+    extends Task {
+    @Config("driver_path")
+    String getDriverPath();
 
-        @Config("table")
-        public String getTable();
+    @Config("url")
+    String getUrl();
+
+    @Config("table")
+    String getTable();
+
+    @Config("external_id_column")
+    String getExternalIdColumn();
+  }
+
+  @Override
+  public ConfigDiff transaction(ConfigSource config,
+                                Schema schema, int taskCount,
+                                OutputPlugin.Control control) {
+    PluginTask task = config.loadConfig(PluginTask.class);
+
+    try {
+      addDriverJarToClasspath(task.getDriverPath());
+      Class.forName("cdata.jdbc.salesforce.SalesforceDriver");
+      conn = DriverManager.getConnection(task.getUrl());
+    } catch (ClassNotFoundException | SQLException e) {
+      throw new RuntimeException(e);
     }
 
-    @Override
-    public ConfigDiff transaction(ConfigSource config,
-            Schema schema, int taskCount,
-            OutputPlugin.Control control)
-    {
-        PluginTask task = config.loadConfig(PluginTask.class);
+    // retryable (idempotent) output:
+    // return resume(task.dump(), schema, taskCount, control);
 
-        try {
-            addDriverJarToClasspath(task.getDriverPath());
-            Class.forName("cdata.jdbc.salesforce.SalesforceDriver");
-            conn = DriverManager.getConnection(task.getUrl());
-        } catch (ClassNotFoundException | SQLException e) {
-            throw new RuntimeException(e);
-        }
+    // non-retryable (non-idempotent) output:
+    control.run(task.dump());
+    return Exec.newConfigDiff();
+  }
 
-        // retryable (idempotent) output:
-        // return resume(task.dump(), schema, taskCount, control);
+  @Override
+  public ConfigDiff resume(TaskSource taskSource,
+                           Schema schema, int taskCount,
+                           OutputPlugin.Control control) {
+    throw new UnsupportedOperationException("cdata output plugin does not support resuming");
+  }
 
-        // non-retryable (non-idempotent) output:
-        control.run(task.dump());
-        return Exec.newConfigDiff();
+  @Override
+  public void cleanup(TaskSource taskSource,
+                      Schema schema, int taskCount,
+                      List<TaskReport> successTaskReports) {
+  }
+
+  @Override
+  public TransactionalPageOutput open(TaskSource taskSource, Schema schema, int taskIndex) {
+    PluginTask task = taskSource.loadTask(PluginTask.class);
+
+    PageReader reader = new PageReader(schema);
+    return new CDataPageOutput(reader, conn, task);
+  }
+
+  private void addDriverJarToClasspath(String glob) {
+    // TODO match glob
+    final ClassLoader loader = getClass().getClassLoader();
+    if (!(loader instanceof URLClassLoader)) {
+      throw new RuntimeException("Plugin is not loaded by URLClassLoader unexpectedly.");
     }
-
-    @Override
-    public ConfigDiff resume(TaskSource taskSource,
-            Schema schema, int taskCount,
-            OutputPlugin.Control control)
-    {
-        throw new UnsupportedOperationException("cdata output plugin does not support resuming");
+    if (!"org.embulk.plugin.PluginClassLoader".equals(loader.getClass().getName())) {
+      throw new RuntimeException("Plugin is not loaded by PluginClassLoader unexpectedly.");
     }
-
-    @Override
-    public void cleanup(TaskSource taskSource,
-            Schema schema, int taskCount,
-            List<TaskReport> successTaskReports)
-    {
+    Path path = Paths.get(glob);
+    if (!path.toFile().exists()) {
+      throw new ConfigException("The specified driver jar doesn't exist: " + glob);
     }
-
-    @Override
-    public TransactionalPageOutput open(TaskSource taskSource, Schema schema, int taskIndex)
-    {
-        PluginTask task = taskSource.loadTask(PluginTask.class);
-
-        PageReader reader = new PageReader(schema);
-        return new CDataPageOutput(reader, conn, task);
+    final Method addPathMethod;
+    try {
+      addPathMethod = loader.getClass().getMethod("addPath", Path.class);
+    } catch (final NoSuchMethodException ex) {
+      throw new RuntimeException("Plugin is not loaded a ClassLoader which has addPath(Path), unexpectedly.");
     }
-
-    private void addDriverJarToClasspath(String glob)
-    {
-        // TODO match glob
-        final ClassLoader loader = getClass().getClassLoader();
-        if (!(loader instanceof URLClassLoader)) {
-            throw new RuntimeException("Plugin is not loaded by URLClassLoader unexpectedly.");
-        }
-        if (!"org.embulk.plugin.PluginClassLoader".equals(loader.getClass().getName())) {
-            throw new RuntimeException("Plugin is not loaded by PluginClassLoader unexpectedly.");
-        }
-        Path path = Paths.get(glob);
-        if (!path.toFile().exists()) {
-            throw new ConfigException("The specified driver jar doesn't exist: " + glob);
-        }
-        final Method addPathMethod;
-        try {
-            addPathMethod = loader.getClass().getMethod("addPath", Path.class);
-        } catch (final NoSuchMethodException ex) {
-            throw new RuntimeException("Plugin is not loaded a ClassLoader which has addPath(Path), unexpectedly.");
-        }
-        try {
-            addPathMethod.invoke(loader, Paths.get(glob));
-        } catch (final IllegalAccessException ex) {
-            throw new RuntimeException(ex);
-        } catch (final InvocationTargetException ex) {
-            final Throwable targetException = ex.getTargetException();
-            if (targetException instanceof MalformedURLException) {
-                throw new IllegalArgumentException(targetException);
-            } else if (targetException instanceof RuntimeException) {
-                throw (RuntimeException) targetException;
-            } else {
-                throw new RuntimeException(targetException);
-            }
-        }
+    try {
+      addPathMethod.invoke(loader, Paths.get(glob));
+    } catch (final IllegalAccessException ex) {
+      throw new RuntimeException(ex);
+    } catch (final InvocationTargetException ex) {
+      final Throwable targetException = ex.getTargetException();
+      if (targetException instanceof MalformedURLException) {
+        throw new IllegalArgumentException(targetException);
+      } else if (targetException instanceof RuntimeException) {
+        throw (RuntimeException) targetException;
+      } else {
+        throw new RuntimeException(targetException);
+      }
     }
+  }
 }

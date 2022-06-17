@@ -23,6 +23,9 @@ dependencies {
     provided "org.embulk:embulk-core:0.10.35"
     // compile "YOUR_JAR_DEPENDENCY_GROUP:YOUR_JAR_DEPENDENCY_MODULE:YOUR_JAR_DEPENDENCY_VERSION"
     testCompile 'junit:junit:4.13.2'
+
+    implementation 'org.apache.logging.log4j:log4j-api:2.17.2'
+    implementation 'org.apache.logging.log4j:log4j-core:2.17.2'
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {
