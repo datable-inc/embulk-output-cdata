@@ -19,7 +19,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
   private final Connection conn;
   private final CDataOutputPlugin.PluginTask task;
   private PreparedStatement preparedStatement;
-  private String currentExternalColumnId = "";
+  private String currentExternalIdColumn = "";
 
   public CDataPageOutputForUpdate(final PageReader reader, Connection conn, CDataOutputPlugin.PluginTask task) {
     this.pageReader = reader;
@@ -113,7 +113,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
             try {
               preparedStatementColumnLogger(column);
               if (Objects.equals(column.getName(), task.getExternalIdColumn())) {
-                currentExternalColumnId = pageReader.getString(column);
+                currentExternalIdColumn = pageReader.getString(column);
               }
               preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
             } catch (SQLException e) {
@@ -141,9 +141,14 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
             }
           }
         });
-        preparedStatement.setString(1, idMap.get(currentExternalColumnId));
-        preparedStatement.executeUpdate();
-        logger.info("inserted to Temp#TEMP");
+        String id = idMap.get(currentExternalIdColumn);
+        if (id != null) {
+          preparedStatement.setString(1, idMap.get(currentExternalIdColumn));
+          preparedStatement.executeUpdate();
+          logger.info("inserted to Temp#TEMP");
+        } else {
+          logger.info("skipped insert to Temp#TEMP, currentExternalIdColumn: " + currentExternalIdColumn);
+        }
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
