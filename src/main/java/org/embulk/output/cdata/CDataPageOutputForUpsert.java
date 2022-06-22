@@ -50,7 +50,7 @@ public class CDataPageOutputForUpsert implements TransactionalPageOutput {
           @Override
           public void booleanColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getBoolean(column));
               preparedStatement.setBoolean(column.getIndex() + 1, pageReader.getBoolean(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -60,7 +60,7 @@ public class CDataPageOutputForUpsert implements TransactionalPageOutput {
           @Override
           public void longColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getLong(column));
               preparedStatement.setLong(column.getIndex() + 1, pageReader.getLong(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -70,7 +70,7 @@ public class CDataPageOutputForUpsert implements TransactionalPageOutput {
           @Override
           public void doubleColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getDouble(column));
               preparedStatement.setDouble(column.getIndex() + 1, pageReader.getDouble(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -80,7 +80,7 @@ public class CDataPageOutputForUpsert implements TransactionalPageOutput {
           @Override
           public void stringColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getString(column));
               preparedStatement.setString(column.getIndex() + 1, pageReader.getString(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -90,7 +90,7 @@ public class CDataPageOutputForUpsert implements TransactionalPageOutput {
           @Override
           public void timestampColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getTimestampInstant(column));
               preparedStatement.setTimestamp(column.getIndex() + 1, Timestamp.from(pageReader.getTimestampInstant(column)));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -100,7 +100,7 @@ public class CDataPageOutputForUpsert implements TransactionalPageOutput {
           @Override
           public void jsonColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getString(column));
               preparedStatement.setString(column.getIndex() + 1, pageReader.getString(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -157,9 +157,5 @@ public class CDataPageOutputForUpsert implements TransactionalPageOutput {
   @Override
   public TaskReport commit() {
     return null;
-  }
-
-  private void preparedStatementColumnLogger(Column column) {
-    logger.info(column.getName() + ": " + pageReader.getString(column));
   }
 }

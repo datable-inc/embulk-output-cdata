@@ -81,7 +81,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void booleanColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getBoolean(column));
               preparedStatement.setBoolean(column.getIndex() + 2, pageReader.getBoolean(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -91,7 +91,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void longColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getLong(column));
               preparedStatement.setLong(column.getIndex() + 2, pageReader.getLong(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -101,7 +101,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void doubleColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getDouble(column));
               preparedStatement.setDouble(column.getIndex() + 2, pageReader.getDouble(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -111,7 +111,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void stringColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getString(column));
               if (Objects.equals(column.getName(), task.getExternalIdColumn())) {
                 currentExternalIdColumn = pageReader.getString(column);
               }
@@ -124,7 +124,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void timestampColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getTimestampInstant(column));
               preparedStatement.setTimestamp(column.getIndex() + 2, Timestamp.from(pageReader.getTimestampInstant(column)));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -134,7 +134,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void jsonColumn(Column column) {
             try {
-              preparedStatementColumnLogger(column);
+              logger.info(column.getName() + ": " + pageReader.getString(column));
               preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
             } catch (SQLException e) {
               throw new RuntimeException(e);
@@ -143,7 +143,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
         });
         String id = idMap.get(currentExternalIdColumn);
         if (id != null) {
-          preparedStatement.setString(1, idMap.get(currentExternalIdColumn));
+          preparedStatement.setString(1, id);
           preparedStatement.executeUpdate();
           logger.info("inserted to Temp#TEMP");
         } else {
@@ -196,9 +196,5 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
   @Override
   public TaskReport commit() {
     return null;
-  }
-
-  private void preparedStatementColumnLogger(Column column) {
-    logger.info(column.getName() + ": " + pageReader.getString(column));
   }
 }
