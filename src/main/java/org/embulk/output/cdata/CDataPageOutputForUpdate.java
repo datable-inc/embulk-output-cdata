@@ -81,7 +81,11 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void booleanColumn(Column column) {
             try {
-              preparedStatement.setBoolean(column.getIndex() + 2, pageReader.getBoolean(column));
+              if (pageReader.getString(column) == null) {
+                preparedStatement.setObject(column.getIndex() + 2, null);
+              } else {
+                preparedStatement.setBoolean(column.getIndex() + 2, pageReader.getBoolean(column));
+              }
             } catch (SQLException e) {
               throw new RuntimeException(e);
             }
@@ -90,7 +94,11 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void longColumn(Column column) {
             try {
-              preparedStatement.setLong(column.getIndex() + 2, pageReader.getLong(column));
+              if (pageReader.getString(column) == null) {
+                preparedStatement.setObject(column.getIndex() + 2, null);
+              } else {
+                preparedStatement.setLong(column.getIndex() + 2, pageReader.getLong(column));
+              }
             } catch (SQLException e) {
               throw new RuntimeException(e);
             }
@@ -99,7 +107,11 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void doubleColumn(Column column) {
             try {
-              preparedStatement.setDouble(column.getIndex() + 2, pageReader.getDouble(column));
+              if (pageReader.getString(column) == null) {
+                preparedStatement.setObject(column.getIndex() + 2, null);
+              } else {
+                preparedStatement.setDouble(column.getIndex() + 2, pageReader.getDouble(column));
+              }
             } catch (SQLException e) {
               throw new RuntimeException(e);
             }
@@ -111,7 +123,11 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
               if (Objects.equals(column.getName(), task.getExternalIdColumn())) {
                 currentExternalIdColumn = pageReader.getString(column);
               }
-              preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
+              if (pageReader.getString(column) == null) {
+                preparedStatement.setObject(column.getIndex() + 2, null);
+              } else {
+                preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
+              }
             } catch (SQLException e) {
               throw new RuntimeException(e);
             }
@@ -120,7 +136,11 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void timestampColumn(Column column) {
             try {
-              preparedStatement.setTimestamp(column.getIndex() + 2, Timestamp.from(pageReader.getTimestampInstant(column)));
+              if (pageReader.getString(column) == null) {
+                preparedStatement.setObject(column.getIndex() + 2, null);
+              } else {
+                preparedStatement.setTimestamp(column.getIndex() + 2, Timestamp.from(pageReader.getTimestampInstant(column)));
+              }
             } catch (SQLException e) {
               throw new RuntimeException(e);
             }
@@ -129,7 +149,11 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void jsonColumn(Column column) {
             try {
-              preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
+              if (pageReader.getString(column) == null) {
+                preparedStatement.setObject(column.getIndex() + 2, null);
+              } else {
+                preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
+              }
             } catch (SQLException e) {
               throw new RuntimeException(e);
             }
