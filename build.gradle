@@ -85,7 +85,7 @@ Gem::Specification.new do |spec|
   spec.description   = %[Dumps records to Cdata.]
   spec.email         = ["m.nishitsuji@gmail.com"]
   spec.licenses      = ["MIT"]
-  # TODO set this: spec.homepage      = "https://github.com/m.nishitsuji/embulk-output-cdata"
+  spec.homepage      = "https://github.com/datable-inc/embulk-output-cdata"
 
   spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
   spec.test_files    = spec.files.grep(%r"^(test|spec)/")
