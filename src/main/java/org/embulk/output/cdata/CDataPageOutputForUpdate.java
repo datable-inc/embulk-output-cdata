@@ -81,7 +81,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void booleanColumn(Column column) {
             try {
-              if (pageReader.getString(column) == null) {
+              if (pageReader.isNull(column)) {
                 preparedStatement.setObject(column.getIndex() + 2, null);
               } else {
                 preparedStatement.setBoolean(column.getIndex() + 2, pageReader.getBoolean(column));
@@ -94,7 +94,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void longColumn(Column column) {
             try {
-              if (pageReader.getString(column) == null) {
+              if (pageReader.isNull(column)) {
                 preparedStatement.setObject(column.getIndex() + 2, null);
               } else {
                 preparedStatement.setLong(column.getIndex() + 2, pageReader.getLong(column));
@@ -107,7 +107,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void doubleColumn(Column column) {
             try {
-              if (pageReader.getString(column) == null) {
+              if (pageReader.isNull(column)) {
                 preparedStatement.setObject(column.getIndex() + 2, null);
               } else {
                 preparedStatement.setDouble(column.getIndex() + 2, pageReader.getDouble(column));
@@ -123,7 +123,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
               if (Objects.equals(column.getName(), task.getExternalIdColumn())) {
                 currentExternalIdColumn = pageReader.getString(column);
               }
-              if (pageReader.getString(column) == null) {
+              if (pageReader.isNull(column)) {
                 preparedStatement.setObject(column.getIndex() + 2, null);
               } else {
                 preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
@@ -136,7 +136,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void timestampColumn(Column column) {
             try {
-              if (pageReader.getString(column) == null) {
+              if (pageReader.isNull(column)) {
                 preparedStatement.setObject(column.getIndex() + 2, null);
               } else {
                 preparedStatement.setTimestamp(column.getIndex() + 2, Timestamp.from(pageReader.getTimestampInstant(column)));
@@ -149,7 +149,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
           @Override
           public void jsonColumn(Column column) {
             try {
-              if (pageReader.getString(column) == null) {
+              if (pageReader.isNull(column)) {
                 preparedStatement.setObject(column.getIndex() + 2, null);
               } else {
                 preparedStatement.setString(column.getIndex() + 2, pageReader.getString(column));
