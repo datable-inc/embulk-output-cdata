@@ -25,6 +25,9 @@ public class CDataOutputPlugin
     @Config("driver_path")
     String getDriverPath();
 
+    @Config("class_name")
+    String getDriverName();
+
     @Config("url")
     String getUrl();
 
@@ -41,7 +44,7 @@ public class CDataOutputPlugin
   @Override
   public ConfigDiff transaction(ConfigSource config,
                                 Schema schema, int taskCount,
-                                OutputPlugin.Control control) {
+                                Control control) {
     PluginTask task = config.loadConfig(PluginTask.class);
 
     try {
@@ -63,7 +66,7 @@ public class CDataOutputPlugin
   @Override
   public ConfigDiff resume(TaskSource taskSource,
                            Schema schema, int taskCount,
-                           OutputPlugin.Control control) {
+                           Control control) {
     throw new UnsupportedOperationException("cdata output plugin does not support resuming");
   }
 
@@ -79,7 +82,11 @@ public class CDataOutputPlugin
 
     PageReader reader = new PageReader(schema);
     if (Objects.equals(task.getMode(), "insert_direct")) {
-      return new CDataPageOutputForUpsert(reader, conn, task);
+      if (Objects.equals(task.getDriverPath(), "cdata.jdbc.salesforce.SalesforceDriver")) {
+        return new CDataPageOutputForUpsert(reader, conn, task);
+      } else {
+        return new CDataPageOutputForManualUpsert(reader, conn, task);
+      }
     } else {
       return new CDataPageOutputForUpdate(reader, conn, task);
     }
