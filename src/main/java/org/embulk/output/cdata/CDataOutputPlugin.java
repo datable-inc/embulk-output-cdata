@@ -49,7 +49,7 @@ public class CDataOutputPlugin
 
     try {
       addDriverJarToClasspath(task.getDriverPath());
-      Class.forName("cdata.jdbc.salesforce.SalesforceDriver");
+      Class.forName(task.getDriverName());
       conn = DriverManager.getConnection(task.getUrl());
     } catch (ClassNotFoundException | SQLException e) {
       throw new RuntimeException(e);
@@ -82,7 +82,7 @@ public class CDataOutputPlugin
 
     PageReader reader = new PageReader(schema);
     if (Objects.equals(task.getMode(), "insert_direct")) {
-      if (Objects.equals(task.getDriverPath(), "cdata.jdbc.salesforce.SalesforceDriver")) {
+      if (Objects.equals(task.getDriverName(), "cdata.jdbc.salesforce.SalesforceDriver")) {
         return new CDataPageOutputForUpsert(reader, conn, task);
       } else {
         return new CDataPageOutputForManualUpsert(reader, conn, task);
