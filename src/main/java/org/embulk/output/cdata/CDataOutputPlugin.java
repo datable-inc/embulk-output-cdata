@@ -39,6 +39,9 @@ public class CDataOutputPlugin
 
     @Config("external_id_column")
     String getExternalIdColumn();
+
+    @Config("default_primary_key")
+    String getDefaultPrimaryKey();
   }
 
   @Override

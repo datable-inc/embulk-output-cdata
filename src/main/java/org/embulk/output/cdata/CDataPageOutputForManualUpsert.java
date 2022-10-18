@@ -6,8 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase {
@@ -34,10 +33,7 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
 
     protected void executeInsert(List<String> columnNames, List<String> preparedValues) {
         String tempInsertStatement = createInsertQuery(TEMP_ALL_RECORDS_TABLE, columnNames, preparedValues);
-        String insertStatement = createInsertQuery(INSERT_TEMP_TABLE, columnNames, preparedValues);
-        String updateStatement = createInsertQuery(UPDATE_TEMP_TABLE, columnNames, preparedValues);
-
-        String idColumn = getTask().getExternalIdColumn();
+        String externalIdColumn = getTask().getExternalIdColumn();
 
         // insert to TempAllRecords#TEMP
         while (getPageReader().nextRecord()) {
@@ -56,17 +52,25 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
         try {
             // split insert to InsertTemp#TEMP and UpdateTemp#TEMP
             ResultSet resultSet = selectRecordAll(getTask().getTable());
-            List<String> idList = toIdList(idColumn, resultSet);
+            Map<String, String> externalIdList = toIds(externalIdColumn, getTask().getDefaultPrimaryKey(), resultSet);
 
             ResultSet tempAllRecordsResultSet = selectRecordAll(TEMP_ALL_RECORDS_TABLE);
 
             while (tempAllRecordsResultSet.next()) {
-                String idColumnValue = tempAllRecordsResultSet.getString(idColumn);
+                if (externalIdList.containsKey(tempAllRecordsResultSet.getString(externalIdColumn))) {
+                    String PrimaryKeyColumnValue = externalIdList.get(tempAllRecordsResultSet.getString(externalIdColumn));
 
-                if (idList.contains(idColumnValue)) {
+                    List<String> updateColumnNames = new ArrayList<>(columnNames);
+                    updateColumnNames.add(getTask().getDefaultPrimaryKey());
+
+                    List<String> updatePreparedValues = new ArrayList<>(preparedValues);
+                    updatePreparedValues.add(PrimaryKeyColumnValue);
+
+                    String updateStatement = createInsertQuery(UPDATE_TEMP_TABLE, updateColumnNames, updatePreparedValues);
+
                     // already record, insert to UpdateTemp#TEMP
                     try (PreparedStatement updatePreparedStatement = getConnection().prepareStatement(updateStatement, Statement.RETURN_GENERATED_KEYS)) {
-                        int index = 0;
+                        int index = 1;
                         for (String columnName : columnNames) {
                             updatePreparedStatement.setObject(index, tempAllRecordsResultSet.getObject(index));
                             index++;
@@ -76,13 +80,16 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
 
                 } else {
                     // new record, insert to InsertTemp#TEMP
+                    String insertStatement = createInsertQuery(INSERT_TEMP_TABLE, columnNames, preparedValues);
                     try (PreparedStatement insertPreparedStatement = getConnection().prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS)) {
-                        int index = 0;
+                        int index = 1;
                         for (String columnName : columnNames) {
                             insertPreparedStatement.setObject(index, tempAllRecordsResultSet.getObject(index));
                             index++;
                         }
                         insertPreparedStatement.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -133,13 +140,12 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
         }
     }
 
-    protected List<String> toIdList(String idColumnName, ResultSet resultSet) throws SQLException {
-        List<String> idList = new ArrayList<>();
+    protected Map<String, String> toIds(String externalIdColumnName, String defaultPrimaryKey, ResultSet resultSet) throws SQLException {
+        Map<String, String> externalIdMap = new HashMap<>();
         while (resultSet.next()) {
-            String idColumnValue = resultSet.getString(idColumnName);
-            idList.add(idColumnValue);
+            externalIdMap.put(resultSet.getString(externalIdColumnName), resultSet.getString(defaultPrimaryKey));
         }
 
-        return idList;
+        return externalIdMap;
     }
 }
