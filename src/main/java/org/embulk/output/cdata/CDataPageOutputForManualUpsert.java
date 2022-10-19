@@ -31,13 +31,19 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
 
     protected void executeInsert(List<String> columnNames, List<String> preparedValues) {
         String externalIdColumn = getTask().getExternalIdColumn();
+        String primaryKeyColumn = getTask().getDefaultPrimaryKey();
 
         try {
             // split insert to InsertTemp#TEMP and UpdateTemp#TEMP
-            ResultSet resultSet = selectRecordAll(getTask().getTable());
+            List<String> extractColumnNames = new ArrayList<>(Arrays.asList(externalIdColumn, primaryKeyColumn));
+            if (Objects.equals(externalIdColumn, primaryKeyColumn)) {
+                extractColumnNames = new ArrayList<>(Collections.singletonList(externalIdColumn));
+            }
+
+            ResultSet resultSet = selectRecordAll(getTask().getTable(), extractColumnNames);
             Map<String, String> externalIdValueAndPrimaryKeyValueMap = toIds(
                     externalIdColumn,
-                    getTask().getDefaultPrimaryKey(),
+                    primaryKeyColumn,
                     resultSet);
 
             while (getPageReader().nextRecord()) {
@@ -120,10 +126,10 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
         return insertIntoSelectQuery + " , and,  " + updateIntoSelectQuery;
     }
 
-    protected ResultSet selectRecordAll(String tableName) {
+    protected ResultSet selectRecordAll(String tableName, List<String> selectColumns) {
         try {
             Statement selectStatement = getConnection().createStatement();
-            return selectStatement.executeQuery("SELECT * FROM " + tableName);
+            return selectStatement.executeQuery("SELECT " + String.join(", ", selectColumns) + " FROM " + tableName);
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
