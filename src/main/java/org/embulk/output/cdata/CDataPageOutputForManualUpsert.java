@@ -52,10 +52,13 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
                     String PrimaryKeyColumnValue = externalIdValueAndPrimaryKeyValueMap.get(externalIdValue);
 
                     List<String> updateColumnNames = new ArrayList<>(columnNames);
-                    updateColumnNames.add(getTask().getDefaultPrimaryKey());
-
                     List<String> updatePreparedValues = new ArrayList<>(preparedValues);
-                    updatePreparedValues.add(PrimaryKeyColumnValue);
+
+                    boolean mustBeAddPrimaryKey = !Objects.equals(getTask().getDefaultPrimaryKey(), getTask().getExternalIdColumn());
+                    if (mustBeAddPrimaryKey) {
+                        updateColumnNames.add(getTask().getDefaultPrimaryKey());
+                        updatePreparedValues.add(PrimaryKeyColumnValue);
+                    }
 
                     String updateStatement = createInsertQuery(UPDATE_TEMP_TABLE, updateColumnNames, updatePreparedValues);
 
