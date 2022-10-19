@@ -10,8 +10,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase {
-
-    private final String TEMP_ALL_RECORDS_TABLE = "TempAllRecords#TEMP";
     private final String INSERT_TEMP_TABLE = "InsertTemp#TEMP";
     private final String UPDATE_TEMP_TABLE = "UpdateTemp#TEMP";
 
@@ -32,33 +30,26 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
     }
 
     protected void executeInsert(List<String> columnNames, List<String> preparedValues) {
-        String tempInsertStatement = createInsertQuery(TEMP_ALL_RECORDS_TABLE, columnNames, preparedValues);
         String externalIdColumn = getTask().getExternalIdColumn();
-
-        // insert to TempAllRecords#TEMP
-        while (getPageReader().nextRecord()) {
-            try {
-                try (PreparedStatement tempInsertPreparedStatement = getConnection().prepareStatement(tempInsertStatement, Statement.RETURN_GENERATED_KEYS)) {
-                    getPageReader().getSchema().visitColumns(createColumnVisitor(tempInsertPreparedStatement));
-                    tempInsertPreparedStatement.executeUpdate();
-                }
-
-                logger.info("inserted to Temp#TEMP");
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
 
         try {
             // split insert to InsertTemp#TEMP and UpdateTemp#TEMP
             ResultSet resultSet = selectRecordAll(getTask().getTable());
-            Map<String, String> externalIdList = toIds(externalIdColumn, getTask().getDefaultPrimaryKey(), resultSet);
+            Map<String, String> externalIdValueAndPrimaryKeyValueMap = toIds(
+                    externalIdColumn,
+                    getTask().getDefaultPrimaryKey(),
+                    resultSet);
 
-            ResultSet tempAllRecordsResultSet = selectRecordAll(TEMP_ALL_RECORDS_TABLE);
+            while (getPageReader().nextRecord()) {
 
-            while (tempAllRecordsResultSet.next()) {
-                if (externalIdList.containsKey(tempAllRecordsResultSet.getString(externalIdColumn))) {
-                    String PrimaryKeyColumnValue = externalIdList.get(tempAllRecordsResultSet.getString(externalIdColumn));
+                int externalIdColumnIndex = columnNames.indexOf(externalIdColumn);
+                if (externalIdColumnIndex == -1) {
+                    throw new RuntimeException("ExternalIdColumn is not found.");
+                }
+
+                String externalIdValue = getPageReader().getString(externalIdColumnIndex);
+                if (externalIdValueAndPrimaryKeyValueMap.containsKey(externalIdValue)) {
+                    String PrimaryKeyColumnValue = externalIdValueAndPrimaryKeyValueMap.get(externalIdValue);
 
                     List<String> updateColumnNames = new ArrayList<>(columnNames);
                     updateColumnNames.add(getTask().getDefaultPrimaryKey());
@@ -70,27 +61,23 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
 
                     // already record, insert to UpdateTemp#TEMP
                     try (PreparedStatement updatePreparedStatement = getConnection().prepareStatement(updateStatement, Statement.RETURN_GENERATED_KEYS)) {
-                        int index = 1;
-                        for (String columnName : columnNames) {
-                            updatePreparedStatement.setObject(index, tempAllRecordsResultSet.getObject(index));
-                            index++;
-                        }
+                        getPageReader().getSchema().visitColumns(createColumnVisitor(updatePreparedStatement));
                         updatePreparedStatement.executeUpdate();
                     }
+
+                    logger.info("inserted to " + UPDATE_TEMP_TABLE);
 
                 } else {
                     // new record, insert to InsertTemp#TEMP
                     String insertStatement = createInsertQuery(INSERT_TEMP_TABLE, columnNames, preparedValues);
                     try (PreparedStatement insertPreparedStatement = getConnection().prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS)) {
-                        int index = 1;
-                        for (String columnName : columnNames) {
-                            insertPreparedStatement.setObject(index, tempAllRecordsResultSet.getObject(index));
-                            index++;
-                        }
+                        getPageReader().getSchema().visitColumns(createColumnVisitor(insertPreparedStatement));
                         insertPreparedStatement.executeUpdate();
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
+
+                    logger.info("inserted to " + INSERT_TEMP_TABLE);
                 }
             }
         } catch (SQLException e) {
@@ -148,4 +135,5 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
 
         return externalIdMap;
     }
+
 }
