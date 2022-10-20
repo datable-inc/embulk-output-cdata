@@ -1,7 +1,6 @@
 package org.embulk.output.cdata;
 
 import org.embulk.config.TaskReport;
-import org.embulk.output.cdata.procedures.MoveFile;
 import org.embulk.spi.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +29,6 @@ public class CDataPageOutputForUpsertBase implements TransactionalPageOutput {
     List<String> preparedValues = createPlaceHolders(); // for ExternalIdColumn
 
     try {
-      if (task.getBackupTable()) {
-        MoveFile.execute(conn, task.getTable());
-      }
       executeInsert(columnNames, preparedValues);
     } catch (SQLException e) {
       throw new RuntimeException(e);

@@ -44,9 +44,9 @@ public class CDataOutputPlugin
     @ConfigDefault("\"id\"")
     String getDefaultPrimaryKey();
 
-    @Config("backup_table")
+    @Config("remove_csv_file")
     @ConfigDefault("false")
-    Boolean getBackupTable();
+    Boolean getRemoveCsvFile();
   }
 
   @Override
@@ -89,7 +89,10 @@ public class CDataOutputPlugin
     PluginTask task = taskSource.loadTask(PluginTask.class);
 
     PageReader reader = new PageReader(schema);
-    if (Objects.equals(task.getMode(), "insert_direct")) {
+    if (Objects.equals(task.getMode(), "insert")) {
+      return new CDataPageOutputForInsert(reader, conn, task);
+    }
+    else if (Objects.equals(task.getMode(), "upsert")) {
       if (Objects.equals(task.getDriverName(), "cdata.jdbc.salesforce.SalesforceDriver")) {
         return new CDataPageOutputForUpsert(reader, conn, task);
       } else {
