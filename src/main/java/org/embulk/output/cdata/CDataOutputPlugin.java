@@ -43,6 +43,10 @@ public class CDataOutputPlugin
     @Config("default_primary_key")
     @ConfigDefault("\"id\"")
     String getDefaultPrimaryKey();
+
+    @Config("backup_table")
+    @ConfigDefault("false")
+    Boolean getBackupTable();
   }
 
   @Override
