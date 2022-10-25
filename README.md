@@ -12,7 +12,7 @@ Support to CData JDBC Driver bulk upsert or update statements.
 ## Configuration
 
 - **driver_path**: description (string, required)
-- **class_name**: description (string, required)
+- **driver_class**: description (string, required)
 - **url**: description (string, `"jdbc:..."`)
 - **mode**: description (string, `"upsert" | "update"`)
 - **table**: description (string, required)

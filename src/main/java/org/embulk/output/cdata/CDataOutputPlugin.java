@@ -25,7 +25,7 @@ public class CDataOutputPlugin
     @Config("driver_path")
     String getDriverPath();
 
-    @Config("class_name")
+    @Config("driver_class")
     String getDriverName();
 
     @Config("url")
