@@ -41,7 +41,7 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
                 " FROM Temp#TEMP";
     }
 
-    protected void executeInsert(List<String> columnNames, List<String> preparedValues) throws SQLException {
+    protected ExecutedInsertResult executeInsert(List<String> columnNames, List<String> preparedValues) throws SQLException {
         String insertStatement = createInsertQuery("Temp#TEMP", columnNames, preparedValues);
         logger.info(insertStatement);
 
@@ -49,8 +49,11 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
         Connection conn = getConnection();
         CDataOutputPlugin.PluginTask task = getTask();
 
+        ExecutedInsertResult result = new ExecutedInsertResult();
+
         while (pageReader.nextRecord()) {
             try {
+                result.selectUpsertRecordCount++;
                 PreparedStatement preparedStatement = conn.prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS);
 
                 pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
@@ -62,9 +65,10 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
                 throw new RuntimeException(e);
             }
         }
+        return result;
     }
 
-    protected String executeUpsert(String tableName, List<String> columnNames) throws SQLException {
+    protected String executeUpsert(String tableName, List<String> columnNames, ExecutedInsertResult result) throws SQLException {
         String upsertStatement = createUpsertQuery(tableName, columnNames);
         getConnection().createStatement().executeUpdate(upsertStatement, Statement.RETURN_GENERATED_KEYS);
         return upsertStatement;

@@ -29,9 +29,10 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
                 .map(it -> "?").collect(Collectors.toCollection(ArrayList::new));
     }
 
-    protected void executeInsert(List<String> columnNames, List<String> preparedValues) {
+    protected ExecutedInsertResult executeInsert(List<String> columnNames, List<String> preparedValues) {
         String externalIdColumn = getTask().getExternalIdColumn();
         String primaryKeyColumn = getTask().getDefaultPrimaryKey();
+        ExecutedInsertResult result = new ExecutedInsertResult();
 
         try {
             // split insert to InsertTemp#TEMP and UpdateTemp#TEMP
@@ -55,6 +56,7 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
 
                 String externalIdValue = getPageReader().getString(externalIdColumnIndex);
                 if (externalIdValueAndPrimaryKeyValueMap.containsKey(externalIdValue)) {
+                    result.selectUpdateRecordCount++;
                     String PrimaryKeyColumnValue = externalIdValueAndPrimaryKeyValueMap.get(externalIdValue);
 
                     List<String> updateColumnNames = new ArrayList<>(columnNames);
@@ -77,6 +79,7 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
                     logger.info("inserted to " + UPDATE_TEMP_TABLE);
 
                 } else {
+                    result.selectInsertRecordCount++;
                     // new record, insert to InsertTemp#TEMP
                     String insertStatement = createInsertQuery(INSERT_TEMP_TABLE, columnNames, preparedValues);
                     try (PreparedStatement insertPreparedStatement = getConnection().prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS)) {
@@ -92,6 +95,7 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return result;
     }
 
     protected String createInsertIntoSelectQuery(String tableName, List<String> columnNames) {
@@ -110,14 +114,21 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
                 " FROM " + UPDATE_TEMP_TABLE;
     }
 
-    protected String executeUpsert(String tableName, List<String> columnNames) throws SQLException {
+    protected String executeUpsert(String tableName, List<String> columnNames, ExecutedInsertResult result) throws SQLException {
 
         String insertIntoSelectQuery = createInsertIntoSelectQuery(tableName, columnNames);
+
+        boolean mustBeAddPrimaryKey = !Objects.equals(getTask().getDefaultPrimaryKey(), getTask().getExternalIdColumn());
+        if (mustBeAddPrimaryKey) {
+            columnNames.add(getTask().getDefaultPrimaryKey());
+        }
         String updateIntoSelectQuery = createUpdateIntoSelectQuery(tableName, columnNames);
 
-        getConnection()
-                .createStatement()
-                .executeUpdate(insertIntoSelectQuery, Statement.RETURN_GENERATED_KEYS);
+        if (result.selectInsertRecordCount > 0) {
+            getConnection()
+                    .createStatement()
+                    .executeUpdate(insertIntoSelectQuery, Statement.RETURN_GENERATED_KEYS);
+        }
 
         getConnection()
                 .createStatement()
