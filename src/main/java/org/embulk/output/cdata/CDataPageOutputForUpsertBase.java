@@ -27,15 +27,16 @@ public class CDataPageOutputForUpsertBase implements TransactionalPageOutput {
     pageReader.setPage(page);
     List<String> columnNames = createColumns();
     List<String> preparedValues = createPlaceHolders(); // for ExternalIdColumn
+    ExecutedInsertResult result;
 
     try {
-      executeInsert(columnNames, preparedValues);
+      result = executeInsert(columnNames, preparedValues);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
 
     try {
-      String upsertStatement = executeUpsert(task.getTable(), columnNames);
+      String upsertStatement = executeUpsert(task.getTable(), columnNames, result);
       logger.info(upsertStatement);
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -112,9 +113,10 @@ public class CDataPageOutputForUpsertBase implements TransactionalPageOutput {
    * insert into Temp table
    * @param columnNames
    * @param preparedValues
+   * @return ExecutedInsertResult
    * @throws SQLException
    */
-  protected void executeInsert(List<String> columnNames, List<String> preparedValues) throws SQLException {
+  protected ExecutedInsertResult executeInsert(List<String> columnNames, List<String> preparedValues) throws SQLException {
     throw new UnsupportedOperationException("executeInsert is not implemented");
   }
 
@@ -123,10 +125,11 @@ public class CDataPageOutputForUpsertBase implements TransactionalPageOutput {
    * when not upsert query un suppoerted, must be use "INSERT INTO SELECT" and "UPDATE SELECT" in this method
    * @param tableName
    * @param columnNames
+   * @param result
    * @return query string, use for logging
    * @throws SQLException
    */
-  protected String executeUpsert(String tableName, List<String> columnNames) throws SQLException {
+  protected String executeUpsert(String tableName, List<String> columnNames, ExecutedInsertResult result) throws SQLException {
     throw new RuntimeException("Not implemented");
   }
 
@@ -192,5 +195,11 @@ public class CDataPageOutputForUpsertBase implements TransactionalPageOutput {
         }
       }
     };
+  }
+
+  protected class ExecutedInsertResult {
+    int selectInsertRecordCount = 0;
+    int selectUpdateRecordCount = 0;
+    int selectUpsertRecordCount = 0;
   }
 }
