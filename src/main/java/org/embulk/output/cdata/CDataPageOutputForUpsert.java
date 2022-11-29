@@ -48,6 +48,7 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
         PageReader pageReader = getPageReader();
         Connection conn = getConnection();
         CDataOutputPlugin.PluginTask task = getTask();
+        logger.info("ExternalIdColumn:" + task.getExternalIdColumn());
 
         ExecutedInsertResult result = new ExecutedInsertResult();
 
@@ -57,8 +58,8 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
                 PreparedStatement preparedStatement = conn.prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS);
 
                 pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
-                preparedStatement.executeUpdate();
                 preparedStatement.setString(preparedValues.size(), task.getExternalIdColumn());
+                preparedStatement.executeUpdate();
 
                 logger.info("inserted to Temp#TEMP");
             } catch (SQLException e) {
