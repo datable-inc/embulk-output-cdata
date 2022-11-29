@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class CDataPageOutputForInsert implements TransactionalPageOutput {
@@ -44,20 +45,39 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
     ArrayList<String> preparedValues = pageReader.getSchema().getColumns().stream()
             .map(it -> "?").collect(Collectors.toCollection(ArrayList::new));
 
-    String insertStatement = "INSERT INTO " + task.getTable() + "(" +
+    String insertTempStatement = "INSERT INTO Temp#TEMP(" +
             String.join(", ", columnNames) +
             ") VALUES (" +
             String.join(", ", preparedValues) + ")";
-    logger.info(insertStatement);
+    logger.info(insertTempStatement);
 
     while (pageReader.nextRecord()) {
       try {
-        this.preparedStatement = conn.prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS);
+        PreparedStatement preparedStatement = conn.prepareStatement(insertTempStatement, Statement.RETURN_GENERATED_KEYS);
+
         pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
+        preparedStatement.setString(preparedValues.size(), task.getExternalIdColumn());
         preparedStatement.executeUpdate();
+
+        logger.info("inserted to Temp#TEMP");
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
+    }
+    
+    String insertStatement = "INSERT INTO " + task.getTable() + " (" +
+            String.join(", ", columnNames) +
+            ") SELECT " +
+            String.join(", ", columnNames) +
+            " FROM Temp#TEMP";
+    logger.info(insertStatement);
+    
+    try {
+      this.preparedStatement = conn.prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS);
+      pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
+      preparedStatement.executeUpdate();
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
     }
   }
 
