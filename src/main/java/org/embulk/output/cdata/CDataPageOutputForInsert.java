@@ -56,7 +56,6 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
         PreparedStatement preparedStatement = conn.prepareStatement(insertTempStatement, Statement.RETURN_GENERATED_KEYS);
 
         pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
-        preparedStatement.setString(preparedValues.size(), task.getExternalIdColumn());
         preparedStatement.executeUpdate();
 
         logger.info("inserted to Temp#TEMP");
