@@ -20,12 +20,14 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
   private final CDataOutputPlugin.PluginTask task;
   private PreparedStatement preparedStatement;
   private String currentExternalIdColumn = "";
+  private String insertTempTable = "";
 
   public CDataPageOutputForUpdate(final PageReader reader, Connection conn, CDataOutputPlugin.PluginTask task) {
     this.pageReader = reader;
     this.conn = conn;
     this.task = task;
     this.preparedStatement = null;
+    this.insertTempTable = task.getTable() + "#TEMP";
   }
 
   @Override
@@ -67,7 +69,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
       throw new RuntimeException(e);
     }
 
-    String insertStatement = "INSERT INTO Temp#TEMP(" +
+    String insertStatement = "INSERT INTO " + insertTempTable + "(" +
       String.join(", ", columnNamesWithId) +
       ") VALUES (" +
       String.join(", ", preparedValues) + ")";
@@ -163,9 +165,9 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
         if (id != null) {
           preparedStatement.setString(1, id);
           preparedStatement.executeUpdate();
-          logger.info("inserted to Temp#TEMP");
+          logger.info("inserted to " + insertTempTable);
         } else {
-          logger.info("skipped insert to Temp#TEMP, currentExternalIdColumn: " + currentExternalIdColumn);
+          logger.info("skipped insert to " + insertTempTable + ", currentExternalIdColumn: " + currentExternalIdColumn);
         }
       } catch (SQLException e) {
         throw new RuntimeException(e);
@@ -176,7 +178,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
         String.join(", ", columnNamesWithId) +
         ") SELECT " +
         String.join(", ", columnNamesWithId) +
-        " FROM Temp#TEMP";
+        " FROM " + insertTempTable;
       logger.info(updateStatement);
       conn.createStatement().executeUpdate(updateStatement, Statement.RETURN_GENERATED_KEYS);
     } catch (SQLException e) {

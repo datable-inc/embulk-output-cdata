@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
 
 public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
 
+    private final String INSERT_TEMP_TABLE = super.getTask().getTable() + "#TEMP";
+
     private static final Logger logger = LoggerFactory.getLogger(CDataPageOutputForUpsert.class);
 
     public CDataPageOutputForUpsert(PageReader reader, Connection conn, CDataOutputPlugin.PluginTask task) {
@@ -22,14 +24,12 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
         List<String> columnNames = getPageReader().getSchema().getColumns().stream()
                 .map(Column::getName).collect(Collectors.toCollection(ArrayList::new));
 
-        columnNames.add("ExternalIdColumn");
         return columnNames;
     }
 
     protected List<String> createPlaceHolders() {
         List<String> preparedValues = getPageReader().getSchema().getColumns().stream()
                 .map(it -> "?").collect(Collectors.toCollection(ArrayList::new));
-        preparedValues.add("?");
         return preparedValues;
     }
 
@@ -38,11 +38,11 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
                 String.join(", ", columnNames) +
                 ") SELECT " +
                 String.join(", ", columnNames) +
-                " FROM Temp#TEMP";
+                " FROM " + INSERT_TEMP_TABLE;
     }
 
     protected ExecutedInsertResult executeInsert(List<String> columnNames, List<String> preparedValues) throws SQLException {
-        String insertStatement = createInsertQuery("Temp#TEMP", columnNames, preparedValues);
+        String insertStatement = createInsertQuery(INSERT_TEMP_TABLE, columnNames, preparedValues);
         logger.info(insertStatement);
 
         PageReader pageReader = getPageReader();
@@ -61,7 +61,7 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
                 preparedStatement.setString(preparedValues.size(), task.getExternalIdColumn());
                 preparedStatement.executeUpdate();
 
-                logger.info("inserted to Temp#TEMP");
+                logger.info("inserted to " + INSERT_TEMP_TABLE);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

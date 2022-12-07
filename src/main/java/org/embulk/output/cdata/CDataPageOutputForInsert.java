@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class CDataPageOutputForInsert implements TransactionalPageOutput {
@@ -19,12 +18,14 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
   private final Connection conn;
   private final CDataOutputPlugin.PluginTask task;
   private PreparedStatement preparedStatement;
+  private String insertTempTable = "";
 
   public CDataPageOutputForInsert(final PageReader reader, Connection conn, CDataOutputPlugin.PluginTask task) {
     this.pageReader = reader;
     this.conn = conn;
     this.task = task;
     this.preparedStatement = null;
+    this.insertTempTable = task.getTable() + "#TEMP";
   }
 
   @Override
@@ -45,7 +46,7 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
     ArrayList<String> preparedValues = pageReader.getSchema().getColumns().stream()
             .map(it -> "?").collect(Collectors.toCollection(ArrayList::new));
 
-    String insertTempStatement = "INSERT INTO Temp#TEMP(" +
+    String insertTempStatement = "INSERT INTO " + insertTempTable + "(" +
             String.join(", ", columnNames) +
             ") VALUES (" +
             String.join(", ", preparedValues) + ")";
@@ -58,7 +59,7 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
         pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
         preparedStatement.executeUpdate();
 
-        logger.info("inserted to Temp#TEMP");
+        logger.info("inserted to " + insertTempTable);
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
@@ -68,7 +69,7 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
             String.join(", ", columnNames) +
             ") SELECT " +
             String.join(", ", columnNames) +
-            " FROM Temp#TEMP";
+            " FROM " + insertTempTable;
     logger.info(insertStatement);
     
     try {
