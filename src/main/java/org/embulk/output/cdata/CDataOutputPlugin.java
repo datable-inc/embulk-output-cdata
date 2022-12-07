@@ -93,11 +93,7 @@ public class CDataOutputPlugin
       return new CDataPageOutputForInsert(reader, conn, task);
     }
     else if (Objects.equals(task.getMode(), "upsert")) {
-      if (Objects.equals(task.getDriverName(), "cdata.jdbc.salesforce.SalesforceDriver")) {
-        return new CDataPageOutputForUpsert(reader, conn, task);
-      } else {
-        return new CDataPageOutputForManualUpsert(reader, conn, task);
-      }
+      return new CDataPageOutputForManualUpsert(reader, conn, task);
     } else {
       return new CDataPageOutputForUpdate(reader, conn, task);
     }
