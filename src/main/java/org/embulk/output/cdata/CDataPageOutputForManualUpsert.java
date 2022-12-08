@@ -10,8 +10,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase {
-    private final String INSERT_TEMP_TABLE = "InsertTemp#TEMP";
-    private final String UPDATE_TEMP_TABLE = "UpdateTemp#TEMP";
+    private final String INSERT_TEMP_TABLE = super.getTask().getTable() + "#TEMP";
+    private final String UPDATE_TEMP_TABLE = super.getTask().getTable() + "#TEMP";
 
     private static final Logger logger = LoggerFactory.getLogger(CDataPageOutputForManualUpsert.class);
 
