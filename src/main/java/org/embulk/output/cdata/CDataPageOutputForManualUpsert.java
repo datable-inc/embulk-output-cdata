@@ -140,7 +140,7 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
     protected ResultSet selectRecordAll(String tableName, List<String> selectColumns) {
         try {
             Statement selectStatement = getConnection().createStatement();
-            return selectStatement.executeQuery("SELECT " + String.join(", ", selectColumns) + " FROM " + tableName);
+            return selectStatement.executeQuery("SELECT " + selectColumns.stream().collect(Collectors.joining("`, `", "`", "`")) + " FROM `" + tableName + "`");
 
         } catch (SQLException e) {
             throw new RuntimeException(e);
