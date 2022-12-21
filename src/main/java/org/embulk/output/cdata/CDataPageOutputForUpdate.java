@@ -45,7 +45,7 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
     preparedValues.add("?"); // for Id
 
     HashMap<String, String> idMap = new HashMap<>();
-    String selectStatement = "SELECT " + columnNamesWithId.stream().collect(Collectors.joining("`, `", "`", "`")) + " FROM `" + task.getTable() + "`";
+    String selectStatement = "SELECT " + String.join(", ", columnNamesWithId) + " FROM " + task.getTable();
     logger.info(selectStatement);
     try {
       Statement statement = conn.createStatement();
@@ -69,8 +69,8 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
       throw new RuntimeException(e);
     }
 
-    String insertStatement = "INSERT INTO `" + insertTempTable + "` (" +
-      columnNamesWithId.stream().collect(Collectors.joining("`, `", "`", "`")) +
+    String insertStatement = "INSERT INTO " + insertTempTable + "(" +
+      String.join(", ", columnNamesWithId) +
       ") VALUES (" +
       String.join(", ", preparedValues) + ")";
     logger.info(insertStatement);
@@ -174,11 +174,11 @@ public class CDataPageOutputForUpdate implements TransactionalPageOutput {
       }
     }
     try {
-      String updateStatement = "UPDATE `" + task.getTable() + "` (" +
-        columnNamesWithId.stream().collect(Collectors.joining("`, `", "`", "`")) +
+      String updateStatement = "UPDATE " + task.getTable() + " (" +
+        String.join(", ", columnNamesWithId) +
         ") SELECT " +
-        columnNamesWithId.stream().collect(Collectors.joining("`, `", "`", "`")) +
-        " FROM `" + insertTempTable + "`";
+        String.join(", ", columnNamesWithId) +
+        " FROM " + insertTempTable;
       logger.info(updateStatement);
       conn.createStatement().executeUpdate(updateStatement, Statement.RETURN_GENERATED_KEYS);
     } catch (SQLException e) {
