@@ -99,19 +99,19 @@ public class CDataPageOutputForManualUpsert extends CDataPageOutputForUpsertBase
     }
 
     protected String createInsertIntoSelectQuery(String tableName, List<String> columnNames) {
-        return "INSERT INTO " + tableName + " (" +
-                String.join(", ", columnNames) +
+        return "INSERT INTO `" + tableName + "` (" +
+                columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
                 ") SELECT " +
-                String.join(", ", columnNames) +
-                " FROM " + INSERT_TEMP_TABLE;
+                columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
+                " FROM `" + INSERT_TEMP_TABLE + "`";
     }
 
     public String createUpdateIntoSelectQuery(String tableName, List<String> columnNames) {
-        return "UPDATE " + tableName + " (" +
-                String.join(", ", columnNames) +
+        return "UPDATE `" + tableName + "` (" +
+                columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
                 ") SELECT " +
-                String.join(", ", columnNames) +
-                " FROM " + UPDATE_TEMP_TABLE;
+                columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
+                " FROM `" + UPDATE_TEMP_TABLE + "`";
     }
 
     protected String executeUpsert(String tableName, List<String> columnNames, ExecutedInsertResult result) throws SQLException {
