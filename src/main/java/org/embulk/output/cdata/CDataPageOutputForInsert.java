@@ -1,7 +1,6 @@
 package org.embulk.output.cdata;
 
 import org.embulk.config.TaskReport;
-import org.embulk.output.cdata.procedures.DeleteFile;
 import org.embulk.spi.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,14 +30,6 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
   @Override
   public void add(Page page) {
     pageReader.setPage(page);
-
-    if (task.getRemoveCsvFile()) {
-      try {
-        DeleteFile.execute(conn, task.getTable());
-      } catch (SQLException e) {
-        throw new RuntimeException(e);
-      }
-    }
 
     ArrayList<String> columnNames = pageReader.getSchema().getColumns().stream()
             .map(Column::getName).collect(Collectors.toCollection(ArrayList::new));
