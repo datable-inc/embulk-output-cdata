@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CDataPageOutputForUpsertBase implements TransactionalPageOutput {
 
@@ -104,8 +103,8 @@ public class CDataPageOutputForUpsertBase implements TransactionalPageOutput {
    * @return
    */
   protected String createInsertQuery(String tableName, List<String> columnNames, List<String> preparedValues) {
-    return "INSERT INTO `" + tableName + "` (" +
-            columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
+    return "INSERT INTO " + tableName + "(" +
+            String.join(", ", columnNames) +
             ") VALUES (" +
             String.join(", ", preparedValues) + ")";
   }

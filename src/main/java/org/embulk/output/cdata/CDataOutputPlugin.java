@@ -43,10 +43,6 @@ public class CDataOutputPlugin
     @Config("default_primary_key")
     @ConfigDefault("\"id\"")
     String getDefaultPrimaryKey();
-
-    @Config("remove_csv_file")
-    @ConfigDefault("false")
-    Boolean getRemoveCsvFile();
   }
 
   @Override

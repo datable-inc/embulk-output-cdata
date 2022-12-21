@@ -1,7 +1,6 @@
 package org.embulk.output.cdata;
 
 import org.embulk.config.TaskReport;
-import org.embulk.output.cdata.procedures.DeleteFile;
 import org.embulk.spi.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,22 +31,14 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
   public void add(Page page) {
     pageReader.setPage(page);
 
-    if (task.getRemoveCsvFile()) {
-      try {
-        DeleteFile.execute(conn, task.getTable());
-      } catch (SQLException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
     ArrayList<String> columnNames = pageReader.getSchema().getColumns().stream()
             .map(Column::getName).collect(Collectors.toCollection(ArrayList::new));
 
     ArrayList<String> preparedValues = pageReader.getSchema().getColumns().stream()
             .map(it -> "?").collect(Collectors.toCollection(ArrayList::new));
 
-    String insertTempStatement = "INSERT INTO `" + insertTempTable + "` (" +
-            columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
+    String insertTempStatement = "INSERT INTO " + insertTempTable + "(" +
+            String.join(", ", columnNames) +
             ") VALUES (" +
             String.join(", ", preparedValues) + ")";
     logger.info(insertTempStatement);
@@ -64,14 +55,14 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
         throw new RuntimeException(e);
       }
     }
-
-    String insertStatement = "INSERT INTO `" + task.getTable() + "` (" +
-            columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
+    
+    String insertStatement = "INSERT INTO " + task.getTable() + " (" +
+            String.join(", ", columnNames) +
             ") SELECT " +
-            columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
-            " FROM `" + insertTempTable + "`";
+            String.join(", ", columnNames) +
+            " FROM " + insertTempTable;
     logger.info(insertStatement);
-
+    
     try {
       this.preparedStatement = conn.prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS);
       pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
