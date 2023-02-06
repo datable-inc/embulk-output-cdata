@@ -34,11 +34,11 @@ public class CDataPageOutputForUpsert extends CDataPageOutputForUpsertBase {
     }
 
     protected String createUpsertQuery(String tableName, List<String> columnNames) {
-        return "UPSERT INTO " + tableName + " (" +
-                String.join(", ", columnNames) +
+        return "UPSERT INTO `" + tableName + "` (" +
+                columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
                 ") SELECT " +
-                String.join(", ", columnNames) +
-                " FROM " + INSERT_TEMP_TABLE;
+                columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
+                " FROM `" + INSERT_TEMP_TABLE + "`";
     }
 
     protected ExecutedInsertResult executeInsert(List<String> columnNames, List<String> preparedValues) throws SQLException {

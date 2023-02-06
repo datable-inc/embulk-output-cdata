@@ -37,8 +37,8 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
     ArrayList<String> preparedValues = pageReader.getSchema().getColumns().stream()
             .map(it -> "?").collect(Collectors.toCollection(ArrayList::new));
 
-    String insertTempStatement = "INSERT INTO " + insertTempTable + "(" +
-            String.join(", ", columnNames) +
+    String insertTempStatement = "INSERT INTO `" + insertTempTable + "` (" +
+            columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
             ") VALUES (" +
             String.join(", ", preparedValues) + ")";
     logger.info(insertTempStatement);
@@ -55,14 +55,14 @@ public class CDataPageOutputForInsert implements TransactionalPageOutput {
         throw new RuntimeException(e);
       }
     }
-    
-    String insertStatement = "INSERT INTO " + task.getTable() + " (" +
-            String.join(", ", columnNames) +
+
+    String insertStatement = "INSERT INTO `" + task.getTable() + "` (" +
+            columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
             ") SELECT " +
-            String.join(", ", columnNames) +
-            " FROM " + insertTempTable;
+            columnNames.stream().collect(Collectors.joining("`, `", "`", "`")) +
+            " FROM `" + insertTempTable + "`";
     logger.info(insertStatement);
-    
+
     try {
       this.preparedStatement = conn.prepareStatement(insertStatement, Statement.RETURN_GENERATED_KEYS);
       pageReader.getSchema().visitColumns(createColumnVisitor(preparedStatement));
